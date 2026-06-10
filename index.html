@@ -823,7 +823,7 @@ function renderDashboard(){
         <div class="list-icon" style="background:${rub.color}1A">${rub.icon}</div>
         <div><div style="font-size:14px;font-weight:700;color:#1F2937">${d.libelle}</div><div style="font-size:11px;color:#9CA3AF">${fmtDateShort(d.date)}</div></div>
       </div>
-      <div style="text-align:right"><div style="font-size:17px;font-weight:800;color:#1F2937(d.montant,true)}</div>${tag(STATUT_CLR[d.statut]||"#666",d.statut)}</div>
+      <div style="text-align:right"><div style="font-size:15px;font-weight:800;color:#1F2937">${fmtMoney(d.montant,true)}</div>${tag(STATUT_CLR[d.statut]||"#666",d.statut)}</div>
     </div>`;
   }).join("");
 
@@ -886,9 +886,15 @@ function renderList(){
     filtered.map(d=>{const rub=getRub(d.rubrique);return `<div class="list-item" onclick="openDetail('${d.id}')">
       <div style="display:flex;align-items:center;gap:10px;min-width:0">
         <div class="list-icon" style="background:${rub.color}1A;flex-shrink:0">${rub.icon}</div>
-        <div style="min-width:0"><div style="font-size:16px;font-weight:700;color:#1F2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.libelle}</div><div style="font-size:13px;color:#9CA3AF ${fmtDateShort(d.date)}</div></div>
+        <div style="min-width:0">
+          <div style="font-size:14px;font-weight:700;color:#1F2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.libelle}</div>
+          <div style="font-size:11px;color:#9CA3AF">${d.fournisseur||"—"} · ${fmtDateShort(d.date)}</div>
+        </div>
       </div>
-      <div style="text-align:right;flex-shrink:0;margin-left:8px"><div style="font-size:17px;font-weight:800;color:#1F2937(d.montant,true)}</div>${tag(STATUT_CLR[d.statut]||"#666",d.statut)}</div>
+      <div style="text-align:right;flex-shrink:0;margin-left:8px">
+        <div style="font-size:15px;font-weight:800;color:#1F2937">${fmtMoney(d.montant,true)}</div>
+        ${tag(STATUT_CLR[d.statut]||"#666",d.statut)}
+      </div>
     </div>`;}).join("");
 }
 function setListRub(v){listFilterRub=v;renderList();}
