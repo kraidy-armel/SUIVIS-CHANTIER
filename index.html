@@ -44,7 +44,7 @@ document.getElementById("manifest-link").href = url;
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'Outfit',sans-serif;background:#F0EEE9;min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden}
+body{font-family:'Outfit',sans-serif,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji";background:#F0EEE9;min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden}
 
 /* ── Layout ── */
 .screen{display:none;padding-bottom:90px;min-height:100vh}
@@ -126,7 +126,7 @@ input:focus,select:focus,textarea:focus{border-color:#C2410C;background:#fff}
 
 /* ── List item ── */
 .list-item{background:#fff;border-radius:18px;padding:13px 15px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.list-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.list-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;}
 
 /* ── Color/icon pickers ── */
 .icon-picker{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
@@ -585,9 +585,18 @@ const STATUT_CLR  = {"Payé":"#047857","En attente":"#B45309","Partiel":"#1D4ED8
 const MONTHS      = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
 const CTYPES      = [{id:"fournisseur",label:"Fournisseur",icon:"🏪",color:"#1D4ED8"},{id:"ouvrier",label:"Ouvrier",icon:"👷",color:"#047857"},{id:"artisan",label:"Artisan",icon:"🔨",color:"#B45309"},{id:"architecte",label:"Architecte",icon:"📐",color:"#6D28D9"},{id:"autre",label:"Autre",icon:"👤",color:"#4B5563"}];
 const DEVISES     = [{code:"EUR",label:"Euro",sym:"€",flag:"🇪🇺",locale:"fr-FR"},{code:"USD",label:"Dollar US",sym:"$",flag:"🇺🇸",locale:"en-US"},{code:"XOF",label:"Franc CFA UEMOA",sym:"F",flag:"🌍",locale:"fr-FR",noDecimal:true,noNative:true},{code:"XAF",label:"Franc CFA CEMAC",sym:"F",flag:"🌍",locale:"fr-FR",noDecimal:true,noNative:true},{code:"GBP",label:"Livre Sterling",sym:"£",flag:"🇬🇧",locale:"en-GB"},{code:"MAD",label:"Dirham Marocain",sym:"DH",flag:"🇲🇦",noNative:true,locale:"fr-MA"},{code:"DZD",label:"Dinar Algérien",sym:"DA",flag:"🇩🇿",noNative:true,locale:"fr-DZ"},{code:"TND",label:"Dinar Tunisien",sym:"DT",flag:"🇹🇳",noNative:true,locale:"fr-TN"},{code:"GNF",label:"Franc Guinéen",sym:"FG",flag:"🇬🇳",noDecimal:true,noNative:true,locale:"fr-FR"},{code:"MGA",label:"Ariary Malgache",sym:"Ar",flag:"🇲🇬",noDecimal:true,noNative:true,locale:"fr-FR"},{code:"CHF",label:"Franc Suisse",sym:"Fr",flag:"🇨🇭",locale:"fr-CH"},{code:"CAD",label:"Dollar Canadien",sym:"$",flag:"🇨🇦",locale:"fr-CA"}];
-const DEF_RUBRIQUES=[{id:"gros_oeuvre",label:"Gros Œuvre",icon:"🏗️",color:"#C2410C",sys:true},{id:"second_oeuvre",label:"Second Œuvre",icon:"🔧",color:"#1D4ED8",sys:true},{id:"materiaux",label:"Matériaux",icon:"🧱",color:"#6D28D9",sys:true},{id:"main_oeuvre",label:"Main d'Œuvre",icon:"👷",color:"#047857",sys:true},{id:"equipements",label:"Équipements",icon:"⚡",color:"#B45309",sys:true},{id:"finitions",label:"Finitions",icon:"🎨",color:"#BE185D",sys:true},{id:"vrd",label:"VRD / Ext.",icon:"🌿",color:"#0F766E",sys:true},{id:"autres",label:"Autres",icon:"📦",color:"#4B5563",sys:true}];
+const DEF_RUBRIQUES=[
+  {id:"gros_oeuvre",  label:"Gros Œuvre",    icon:"🏗", color:"#C2410C",sys:true},
+  {id:"second_oeuvre",label:"Second Œuvre",  icon:"🔧", color:"#1D4ED8",sys:true},
+  {id:"materiaux",    label:"Matériaux",      icon:"🧱", color:"#6D28D9",sys:true},
+  {id:"main_oeuvre",  label:"Main d'Œuvre",  icon:"👷", color:"#047857",sys:true},
+  {id:"equipements",  label:"Équipements",    icon:"⚡", color:"#B45309",sys:true},
+  {id:"finitions",    label:"Finitions",      icon:"🎨", color:"#BE185D",sys:true},
+  {id:"vrd",          label:"VRD / Ext.",     icon:"🌿", color:"#0F766E",sys:true},
+  {id:"autres",       label:"Autres",         icon:"📦", color:"#4B5563",sys:true}
+];
 const RUB_COLORS  = ["#C2410C","#1D4ED8","#047857","#6D28D9","#B45309","#BE185D","#0F766E","#4B5563","#0284C7","#7C3AED","#DB2777","#D97706"];
-const RUB_ICONS   = ["🏗️","🔧","🧱","👷","⚡","🎨","🌿","📦","🏠","🚰","🪟","🛠️","🔌","🏊","🌳","🚧","📐","🛖"];
+const RUB_ICONS   = ["🏗","🔧","🧱","👷","⚡","🎨","🌿","📦","🏠","🚰","🪟","🛠","🔌","🏊","🌳","🚧","📐","🛖"];
 const CH_AVATARS  = ["🏠","🏢","🏗️","🏭","🏰","🏡","🏬","🏛️"];
 const CH_COLORS   = ["#C2410C","#1D4ED8","#047857","#6D28D9","#B45309","#BE185D","#0F766E","#374151"];
 
