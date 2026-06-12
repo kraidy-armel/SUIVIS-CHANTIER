@@ -1205,18 +1205,15 @@ function renderCatalogue(){
   });
   el("article-count").textContent=`${fa.length} article${fa.length!==1?"s":""}`;
   el("article-items").innerHTML=fa.length===0?`<div style="text-align:center;padding:40px;color:#9CA3AF">Aucun article</div>`:
-    fa.map(a=>{const rub=getRub(a.rubrique);return `<div class="card" style="padding:14px 16px;cursor:pointer" onclick="openArticleSheet('${a.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="display:flex;align-items:center;gap:10px;min-width:0">
-          <div class="list-icon" style="background:${rub.color}1A;width:44px;height:44px;flex-shrink:0">${rub.icon}</div>
-          <div style="min-width:0">
-            <div style="font-size:16px;font-weight:700;color:#1F2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.libelle}</div>
-            <div style="font-size:13px;color:#9CA3AF Réf: "+a.ref:""}</div>
-            ${a.notes?`<div style="font-size:11px;color:#6B7280;margin-top:2px">${a.notes}</div>`:""}
-          </div>
+    fa.map(a=>{const rub=getRub(a.rubrique);return `<div class="list-item" onclick="openArticleSheet('${a.id}')">
+      <div style="display:flex;align-items:center;gap:12px;width:100%">
+        <div class="list-icon" style="background:${rub.color}1A;flex-shrink:0">${rub.icon}</div>
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <div style="font-size:14px;font-weight:700;color:#1F2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.libelle}</div>
+          <div style="font-size:11px;color:#9CA3AF">${rub.label}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div style="font-size:18px;font-weight:800;color:${rub.color}">${fmtMoney(a.prix)}</div>
+        <div style="flex-shrink:0;text-align:right;min-width:80px">
+          <div style="font-size:14px;font-weight:800;color:${rub.color};white-space:nowrap">${fmtMoney(a.prix,true)}</div>
           <div style="font-size:11px;color:#9CA3AF">/ ${a.unite}</div>
         </div>
       </div>
