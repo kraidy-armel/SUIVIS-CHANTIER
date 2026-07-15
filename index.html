@@ -398,6 +398,12 @@ input:focus,select:focus,textarea:focus{border-color:#C2410C;background:#fff}
       <button class="btn btn-secondary" style="margin-top:0" onclick="forcePush()">🔄 Synchroniser maintenant</button>
       <button class="btn btn-secondary" style="margin-top:8px" onclick="logout()">Se déconnecter</button>
     </div>
+    <div style="font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:1px;text-transform:uppercase;margin:24px 0 10px">Sauvegarde</div>
+    <div class="card">
+      <div style="font-size:12px;color:#6B7280;margin-bottom:12px">Exportez une copie complète de vos données dans un fichier, ou restaurez-la depuis un fichier de sauvegarde. Votre ceinture de sécurité en cas de problème.</div>
+      <button class="btn btn-primary" style="margin-top:0" onclick="exportBackup()">💾 Exporter une sauvegarde</button>
+      <label class="btn btn-secondary" style="margin-top:8px;display:block;text-align:center;cursor:pointer">📥 Restaurer une sauvegarde<input type="file" accept="application/json,.json" style="display:none" onchange="importBackupFile(this)"></label>
+    </div>
     <div style="font-size:11px;font-weight:700;color:#9CA3AF;letter-spacing:1px;text-transform:uppercase;margin:24px 0 10px">Zone de danger</div>
     <div class="card" style="border:1.5px solid #FEE2E2">
       <div style="font-size:13px;font-weight:700;color:#DC2626;margin-bottom:4px">🗑 Effacer toutes les données</div>
@@ -1631,6 +1637,48 @@ function handleAddChantier(){
   el("nch-nom").value=""; el("nch-adresse").value=""; el("nch-budget").value=""; el("nch-debut").value=today(); el("nch-fin").value="";
   saveChantier(nc); save();
   closeSheet("sheet-new-chantier"); renderSettings(); renderDashboard();
+}
+
+function exportBackup(){
+  const data={ app:"suivis-chantier", version:1, exportedAt:new Date().toISOString(),
+    devise:DB.devise, chantierId:DB.chantierId, rubriques:DB.rubriques,
+    chantiers:DB.chantiers, depenses:DB.depenses, contacts:DB.contacts, articles:DB.articles };
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+  a.download="sauvegarde-chantier-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+  toast("Sauvegarde exportée ✓","ok");
+}
+
+function importBackupFile(input){
+  const file=input.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=async e=>{
+    let data;
+    try{ data=JSON.parse(e.target.result); }catch(_){ toast("Fichier illisible — ce n'est pas une sauvegarde.","err"); input.value=""; return; }
+    if(!data || data.app!=="suivis-chantier" || !Array.isArray(data.chantiers)){ toast("Fichier de sauvegarde non valide.","err"); input.value=""; return; }
+    const nCh=data.chantiers.length, nDep=(data.depenses||[]).length;
+    if(!confirm(`Restaurer cette sauvegarde ?\n\n${nCh} chantier(s) et ${nDep} dépense(s) seront ajoutés ou mis à jour dans votre compte.`)){ input.value=""; return; }
+    showLoader("Restauration…");
+    DB.devise=data.devise||DB.devise;
+    DB.rubriques=(Array.isArray(data.rubriques)&&data.rubriques.length)?data.rubriques:JSON.parse(JSON.stringify(DEF_RUBRIQUES));
+    DB.chantiers=data.chantiers||[];
+    DB.depenses=data.depenses||[];
+    DB.contacts=data.contacts||[];
+    DB.articles=data.articles||[];
+    DB.chantierId=(data.chantierId&&DB.chantiers.find(c=>String(c.id)===String(data.chantierId)))?data.chantierId:(DB.chantiers[0]?DB.chantiers[0].id:null);
+    cacheSave();
+    try{
+      for(const c of DB.chantiers) await saveChantier(c);
+      for(const d of DB.depenses)  await saveDepense(d);
+      for(const c of DB.contacts)  await saveContact(c);
+      for(const a of DB.articles)  await saveCatalogue(a);
+      await save();
+    }catch(err){ console.error("Restauration:",err); }
+    hideLoader(); input.value="";
+    renderSettings(); renderDashboard();
+    toast("Sauvegarde restaurée ✓","ok");
+  };
+  r.readAsText(file);
 }
 
 async function resetApp(){
