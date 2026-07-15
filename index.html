@@ -226,6 +226,14 @@ input:focus,select:focus,textarea:focus{border-color:#C2410C;background:#fff}
         <div id="dash-rub-list" style="flex:1"></div>
       </div>
     </div>
+    <div class="card" id="dash-outstanding-card" style="display:none">
+      <div class="row" style="margin-bottom:10px">
+        <div style="font-size:15px;font-weight:800;color:#1F2937">💸 À régler</div>
+        <span id="dash-outstanding-total" style="font-size:14px;font-weight:800;color:#B45309"></span>
+      </div>
+      <div id="dash-outstanding-list"></div>
+      <button class="btn btn-secondary" style="margin-top:10px" onclick="goToStatus('En attente')">Voir les paiements en attente →</button>
+    </div>
     <div class="row" style="margin-bottom:10px">
       <div style="font-size:13px;font-weight:800;color:#1F2937">Dernières dépenses</div>
       <button class="btn-ghost" style="color:#C2410C;margin-top:0" onclick="showScreen('list')">Tout voir →</button>
@@ -454,7 +462,8 @@ input:focus,select:focus,textarea:focus{border-color:#C2410C;background:#fff}
   <div class="sheet">
     <div style="font-size:18px;font-weight:800;margin-bottom:4px">Exporter</div>
     <div id="export-ch-nom" style="font-size:13px;color:#6B7280;margin-bottom:20px"></div>
-    <button class="btn btn-primary" style="margin-top:0" onclick="doExportCSV()">📊 Export CSV (Excel)</button>
+    <button class="btn btn-primary" style="margin-top:0;background:#047857" onclick="doExportPDF()">🧾 Télécharger en PDF</button>
+    <button class="btn btn-primary" onclick="doExportCSV()">📊 Export CSV (Excel)</button>
     <button class="btn btn-primary" style="background:#1D4ED8" onclick="doExportHTML()">📄 Rapport HTML complet</button>
     <button class="btn btn-secondary" onclick="closeSheet('sheet-export')">Annuler</button>
   </div>
@@ -950,6 +959,24 @@ function renderDashboard(){
       <span style="font-size:12px;font-weight:700;color:${r.color}">${fmtMoney(r.tot,true)}</span>
     </div>`).join("");
 
+  // À régler (paiements en attente / partiels), regroupés par fournisseur
+  const unpaid=deps.filter(d=>d.statut==="En attente"||d.statut==="Partiel");
+  const outstanding=unpaid.reduce((s,d)=>s+d.montant,0);
+  const oc=el("dash-outstanding-card");
+  if(oc){
+    if(outstanding>0){
+      oc.style.display="block";
+      el("dash-outstanding-total").textContent=fmtMoney(outstanding,true);
+      const byF={};
+      unpaid.forEach(d=>{const k=d.fournisseur||"Non attribué"; byF[k]=(byF[k]||0)+d.montant;});
+      el("dash-outstanding-list").innerHTML=Object.entries(byF).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([f,v])=>`
+        <div class="row" style="margin-bottom:8px">
+          <span style="font-size:13px;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:58%">${f}</span>
+          <span style="font-size:13px;font-weight:800;color:#B45309">${fmtMoney(v,true)}</span>
+        </div>`).join("");
+    } else oc.style.display="none";
+  }
+
   // Recent
   el("dash-recent").innerHTML=[...deps].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,4).map(d=>{
     const rub=getRub(d.rubrique);
@@ -1203,7 +1230,25 @@ function handleSave(){
 function handlePhoto(input){
   const file=input.files[0]; if(!file)return;
   const r=new FileReader();
-  r.onload=e=>{formPhoto=e.target.result;el("photo-img").src=formPhoto;el("photo-preview").style.display="block";el("photo-upload-btn").style.display="none";};
+  r.onload=e=>{
+    const orig=e.target.result;
+    const img=new Image();
+    const apply=(data)=>{ formPhoto=data; el("photo-img").src=formPhoto; el("photo-preview").style.display="block"; el("photo-upload-btn").style.display="none"; };
+    img.onload=()=>{
+      try{
+        const MAX=1280; let w=img.width, h=img.height;
+        if(w>h && w>MAX){ h=Math.round(h*MAX/w); w=MAX; }
+        else if(h>=w && h>MAX){ w=Math.round(w*MAX/h); h=MAX; }
+        const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+        cv.getContext("2d").drawImage(img,0,0,w,h);
+        const out=cv.toDataURL("image/jpeg",0.7);
+        // On garde la version la plus légère
+        apply(out && out.length < orig.length ? out : orig);
+      }catch(_){ apply(orig); }
+    };
+    img.onerror=()=>apply(orig);
+    img.src=orig;
+  };
   r.readAsDataURL(file);
 }
 function removePhoto(){formPhoto=null;el("photo-preview").style.display="none";el("photo-upload-btn").style.display="block";}
@@ -1595,6 +1640,53 @@ function doExportCSV(){
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"}));a.download="depenses_chantier.csv";a.click();
   closeSheet("sheet-export");
 }
+function goToStatus(s){ listFilterSt=s; listFilterRub="all"; const inp=el("list-search"); if(inp)inp.value=""; showScreen("list"); }
+
+function doExportPDF(){
+  const ch=getCh();
+  const deps=[...depsCh()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total=deps.reduce((s,d)=>s+d.montant,0);
+  const paye=deps.filter(d=>d.statut==="Payé").reduce((s,d)=>s+d.montant,0);
+  const reste=total-paye;
+  const byRub=DB.rubriques.map(r=>({...r,tot:deps.filter(d=>d.rubrique===r.id).reduce((s,d)=>s+d.montant,0)})).filter(r=>r.tot>0).sort((a,b)=>b.tot-a.tot);
+  const esc=s=>String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  const rows=deps.map(d=>{const rub=getRub(d.rubrique);const sc=STATUT_CLR[d.statut]||"#666";return `<tr><td>${fmtDate(d.date)}</td><td>${esc(d.libelle)}</td><td>${esc(rub.label)}</td><td>${esc(d.fournisseur||"—")}</td><td class="r">${(d.qte||1)} ${esc(d.unite||"")}</td><td class="r">${fmtMoney(d.montant,true)}</td><td><span class="st" style="background:${sc}22;color:${sc}">${esc(d.statut)}</span></td></tr>`;}).join("");
+  const rubRows=byRub.map(r=>`<tr><td>${esc(r.label)}</td><td class="r">${fmtMoney(r.tot,true)}</td><td class="r">${total?((r.tot/total)*100).toFixed(1):0}%</td></tr>`).join("");
+  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Rapport ${esc(ch.nom)}</title>
+  <style>*{font-family:Arial,Helvetica,sans-serif}body{padding:28px;color:#1f2937}
+   h1{color:#C2410C;margin:0 0 2px;font-size:22px}.sub{color:#6b7280;font-size:12px;margin-bottom:18px}
+   .kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+   .k{border:1px solid #e5e7eb;border-radius:10px;padding:12px 16px;min-width:110px}
+   .kv{font-size:17px;font-weight:800;color:#C2410C}.kl{font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+   table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px}
+   th{background:#f9fafb;text-align:left;padding:7px 9px;border-bottom:2px solid #e5e7eb;font-size:10px;text-transform:uppercase;color:#6b7280}
+   td{padding:7px 9px;border-bottom:1px solid #f3f4f6}td.r,th.r{text-align:right}
+   .st{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+   h2{font-size:14px;margin:22px 0 4px;color:#1f2937}
+   @media print{body{padding:0}@page{margin:14mm}}</style></head><body>
+   <h1>🏗️ ${esc(ch.nom)}</h1>
+   <div class="sub">${esc(ch.adresse||"")} · Rapport généré le ${new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"})}</div>
+   <div class="kpis">
+     <div class="k"><div class="kv">${fmtMoney(ch.budget,true)}</div><div class="kl">Budget</div></div>
+     <div class="k"><div class="kv">${fmtMoney(total,true)}</div><div class="kl">Engagé</div></div>
+     <div class="k"><div class="kv">${fmtMoney(paye,true)}</div><div class="kl">Payé</div></div>
+     <div class="k"><div class="kv">${fmtMoney(reste,true)}</div><div class="kl">Restant dû</div></div>
+     <div class="k"><div class="kv">${deps.length}</div><div class="kl">Dépenses</div></div>
+   </div>
+   <h2>Répartition par rubrique</h2>
+   <table><thead><tr><th>Rubrique</th><th class="r">Montant</th><th class="r">Part</th></tr></thead><tbody>${rubRows}</tbody></table>
+   <h2>Détail des dépenses</h2>
+   <table><thead><tr><th>Date</th><th>Libellé</th><th>Rubrique</th><th>Fournisseur</th><th class="r">Qté</th><th class="r">Montant</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>
+  </body></html>`;
+  let f=document.getElementById("print-frame"); if(f)f.remove();
+  f=document.createElement("iframe"); f.id="print-frame"; f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(f);
+  const fd=f.contentWindow.document; fd.open(); fd.write(html); fd.close();
+  const go=()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ toast("Impression indisponible sur ce navigateur","warn"); } };
+  if(fd.readyState==="complete") setTimeout(go,350); else f.onload=()=>setTimeout(go,350);
+  closeSheet("sheet-export");
+}
+
 function doExportHTML(){
   const ch=getCh(),deps=DB.depenses;
   const total=deps.reduce((s,d)=>s+d.montant,0),paye=deps.filter(d=>d.statut==="Payé").reduce((s,d)=>s+d.montant,0);
