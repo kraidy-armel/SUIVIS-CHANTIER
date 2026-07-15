@@ -193,6 +193,7 @@ input:focus,select:focus,textarea:focus{border-color:#C2410C;background:#fff}
     </div>
   </div>
   <div class="body">
+    <div id="dash-alert" style="display:none;border:1.5px solid;border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.4"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <div class="smcard" style="display:flex;align-items:center;gap:10px">
         <div style="width:38px;height:38px;border-radius:10px;background:#04785714;display:flex;align-items:center;justify-content:center;font-size:16px;color:#047857;font-weight:900">✓</div>
@@ -912,6 +913,19 @@ function renderDashboard(){
   el("dash-prog-fill").style.background=pct>90?"#FCA5A5":pct>70?"#FDE68A":"rgba(255,255,255,.9)";
   el("dash-pct").textContent=pct.toFixed(1)+"% engagé";
   el("dash-reste").textContent="Reste : "+fmtMoney(Math.max(ch.budget-total,0),true);
+
+  // Alerte budget automatique (basée sur le budget global du chantier)
+  const realPct = ch.budget>0 ? (total/ch.budget)*100 : 0;
+  const al=el("dash-alert");
+  if(al){
+    if(realPct>=100){
+      al.style.display="block"; al.style.background="#FEE2E2"; al.style.color="#991B1B"; al.style.borderColor="#FCA5A5";
+      al.innerHTML=`⚠️ <b>Budget dépassé</b> — ${fmtMoney(total,true)} engagés sur ${fmtMoney(ch.budget,true)} (${realPct.toFixed(0)}%). Dépassement : ${fmtMoney(total-ch.budget,true)}.`;
+    } else if(realPct>=80){
+      al.style.display="block"; al.style.background="#FEF3C7"; al.style.color="#92400E"; al.style.borderColor="#FDE68A";
+      al.innerHTML=`⚠️ <b>Vous approchez du budget</b> — ${realPct.toFixed(0)}% engagé, il reste ${fmtMoney(ch.budget-total,true)}.`;
+    } else al.style.display="none";
+  }
   el("kpi-paye").textContent=fmtMoney(paye,true);
   el("kpi-attente").textContent=fmtMoney(att,true);
   el("kpi-partiel").textContent=fmtMoney(part,true);
@@ -950,13 +964,14 @@ function renderDashboard(){
     donut.insertBefore(c, donut.querySelector("#dash-donut-total"));
   });
   el("dash-donut-total").textContent=fmtMoney(total,true);
-  el("dash-rub-list").innerHTML=byRub.slice(0,4).map(r=>`
+  el("dash-rub-list").innerHTML=byRub.slice(0,4).map((r,i)=>`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px;min-width:0">
         <div style="width:10px;height:10px;border-radius:3px;background:${r.color};flex-shrink:0"></div>
-        <span style="font-size:11px;color:#374151;font-weight:600">${r.label}</span>
+        <span style="font-size:11px;color:#374151;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.label}</span>
+        ${i===0&&byRub.length>1?`<span style="font-size:8px;font-weight:800;color:${r.color};background:${r.color}1A;padding:2px 6px;border-radius:20px;flex-shrink:0;letter-spacing:.3px">TOP</span>`:""}
       </div>
-      <span style="font-size:12px;font-weight:700;color:${r.color}">${fmtMoney(r.tot,true)}</span>
+      <span style="font-size:12px;font-weight:700;color:${r.color};flex-shrink:0;margin-left:6px">${fmtMoney(r.tot,true)}</span>
     </div>`).join("");
 
   // À régler (paiements en attente / partiels), regroupés par fournisseur
